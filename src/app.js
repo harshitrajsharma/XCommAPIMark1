@@ -22,6 +22,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/api/v1', defaultRouter)
+app.use('/', defaultRouter)
 // app.use(errorHandling)
 
 export default app

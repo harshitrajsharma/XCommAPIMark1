@@ -7,7 +7,7 @@ import { Router } from 'express'
 const router = Router();
 
 router.use('/user', userRoutes); // This will handle all routes to /api/v1/user/*
-router.use('user', userRoutes); // This will handle all routes to /api/v1/user/*
+router.use('user', userRoutes);
 
 router.use('/threads', threadRoutes);
 router.use('threads', threadRoutes);

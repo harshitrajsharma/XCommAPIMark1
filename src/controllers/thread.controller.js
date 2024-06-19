@@ -10,7 +10,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 const createThread = asyncHandler(async (req, res) => {
 
     let authorId = req.user;
-    let { title, banner, content, tags, des, draft } = req.body;
+    let { title, banner, content, tags, des, draft, id } = req.body;
 
     // Validate the data from frontend
     if (!title.length) {
@@ -48,32 +48,52 @@ const createThread = asyncHandler(async (req, res) => {
     // Now all the tags should be in lowercase for the uniformity and to avoid duplication
     tags = tags.map(tag => tag.toLowerCase());
 
-    let thread_id = title.replace(/[^a-zA-Z0-9]/g, ' ').replace(/\s+/g, "-").trim() + nanoid();
+    let thread_id = id || title.replace(/[^a-zA-Z0-9]/g, ' ').replace(/\s+/g, "-").trim() + nanoid();
 
-    let thread = new Thread({
-        title, des, banner, content, tags, author: authorId, thread_id, draft: Boolean(draft)
-    });
+    if(id){
 
-    thread.save().then(thread => {
-        let incrementVal = draft ? 0 : 1;
+        Thread.findOneAndUpdate( { thread_id: id }, { title, des, banner, content, tags, draft: draft ? draft: false })
+        .then( thread => {
+            return res.status(200).json({
+                id: thread_id
+            })
+        })
+        .catch( err => {
+            return res.status(500).json({
+                error: "Failed to update the thread"
+            })
+        })
 
-        User.findOneAndUpdate({ _id: authorId }, { $inc: { "account_info.total_posts": incrementVal }, $push: { "threads": thread._id } })
-            .then(user => {
+    } else{
+
+        let thread = new Thread({
+            title, des, banner, content, tags, author: authorId, thread_id, draft: Boolean(draft)
+        })
+    
+        thread.save().then(thread => {
+            let incrementVal = draft ? 0 : 1;
+    
+            User.findOneAndUpdate({ _id: authorId }, { $inc: { "account_info.total_posts": incrementVal }, $push: { "threads": thread._id } })
+            .then( user => {
                 return res.status(200).json({
                     id: thread._id
-                });
+                })
             })
             .catch(err => {
                 return res.status(500).json({
                     error: "Failed to update total posts number"
-                });
-            });
-    })
-        .catch(err => {
+                })
+            })
+    
+        })
+        .catch( err => {
             return res.status(500).json({
                 error: err.message
-            });
-        });
+            })
+        
+        })
+
+    }
 })
 
 

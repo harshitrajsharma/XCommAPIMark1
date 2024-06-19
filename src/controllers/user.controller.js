@@ -191,46 +191,52 @@ const registerUser = asyncHandler(async (req, res, next) => {
 
 
 // Below is the login functionality of the user
-const loginUser = asyncHandler(async (req, res, next) => {
+const loginUser = asyncHandler(async (req, res) => {
 
-    const { usernameOrEmail, password } = req.body;
+    let { email, password } = req.body;
 
-    // Check if user exist based on email
-    let user = await User.findOne({
-        email: usernameOrEmail
-    })
+    User.findOne({ "personal_info.email": email })
+        .then((user) => {
 
-    // If user not found by email, check by username
-    if (!user) {
-        user = await User.findOne({ username: usernameOrEmail })
-    }
+            if (!user) {
+                return res.status(403).json({
+                    "error": "Email not found"
+                })
+            }
 
-    // If unable to find user in the database. Send the error message
-    if (!user) {
-        return res.status(401).json({
-            message: "User not found.",
+            if (!user.google_auth) {
+
+                bcrypt.compare(password, user.personal_info.password, (err, result) => {
+                    if (err) {
+
+                        return res.status(403).json({
+                            "error": "Password is incorrect"
+                        })
+                    }
+
+                    if (!result) {
+                        return res.status(403).json({
+                            "error": "Password is incorrect"
+                        })
+                    }
+                    else {
+                        return res.status(200).json(formatDatatoSend(user))
+                    }
+                })
+            }
+            else {
+                return res.status(403).json({
+                    "error": "This email is already registered with Google. Please login with Google"
+                })
+            }
         })
-    }
-
-
-    if (!user.google_auth) {
-
-        // If user found then proceede to check if the password is right or not
-        const isPasswordValid = await bcrypt.compare(password, user.personal_info.password);
-
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                message: "Invalid password.",
+        .catch(err => {
+            console.log("Error", err)
+            return res.status(500).json({
+                "error": err.message
             })
-        }
-
-        return res.status(200).json(formatDatatoSend(user));
-    }
-    else {
-        return res.status(400).json({
-            message: "This email is already registered with Google. Please login with Google.",
         })
-    }
+
 })
 
 // Google login/signup functionality

@@ -17,12 +17,28 @@ app.use(cookieParser()); // It is used to parse the cookies that are sent to the
 import defaultRouter from './routes/default.routes.js'
 // import { errorHandling } from './middlewares/errorHandling.js'
 
-app.get('/', (req, res) => {
+app.get('/api/v1/', (req, res) => {
     res.send('Welcome to the Xcomm backend')
 })
+
+app.get('/keep-alive', (req, res) => {
+    res.send('Server is alive');
+});
 
 app.use('/api/v1', defaultRouter)
 app.use('/', defaultRouter)
 // app.use(errorHandling)
+
+
+// Function to send a keep-alive request to the server
+const sendKeepAliveRequest = () => {
+    fetch('https://xcommapimark1.onrender.com/keep-alive')
+        .then(response => response.text())
+        .then(data => console.log('Keep-alive response:', data))
+        .catch(error => console.error('Keep-alive request failed:', error));
+};
+
+// Call the sendKeepAliveRequest function every 5 minutes (300000 milliseconds)
+setInterval(sendKeepAliveRequest, 300000);
 
 export default app
